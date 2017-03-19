@@ -16,33 +16,17 @@ except ImportError,err:
 #########################
 # YOUR IMPORTS GO HERE  #
 #########################
-
-
-
-def main(argv):
-    """This is a documentation string. Write a description of what your code
-    does here. You should generally put documentation strings ("docstrings")
-    on all your Python functions."""
-    #########################
-    #  YOUR CODE GOES HERE  #
-    #########################
-    doc = scribus.getDocName()
-    unit = scribus.getUnit()
-    (PageWidth,PageHeight) = scribus.getPageSize()
-    (iT, iI, iO , iB) = scribus.getPageMargins()
-    NewPagepoint = PageHeight - iT -iB
-    print iT
-    print iI
-    print iO
-    print iB
-    print unit
-    print NewPagepoint
-#print dir(doc)# Add a page
-    #scribus.newPage(-1)
-    if scribus.objectExists("__player__"):
-        player = scribus.selectObject("__player__")
+import os
+def copyPlayer(sourceName, destinationName):
+    if scribus.objectExists(sourceName):
+        doc = scribus.getDocName()
+        unit = scribus.getUnit()
+        (PageWidth,PageHeight) = scribus.getPageSize()
+        (iT, iI, iO , iB) = scribus.getPageMargins()
+        NewPagepoint = PageHeight - iT -iB
+        player = scribus.selectObject(sourceName)
         #Duplicate the object...
-        scribus.duplicateObject("__player__")
+        scribus.duplicateObject(sourceName)
         x = scribus.getSelectedObject()
         newObjectName = str(x)
         size = scribus.getSize(newObjectName)
@@ -52,21 +36,63 @@ def main(argv):
         scribus.docChanged(1)
         if (y+size[1] > NewPagepoint):
             currentPage = scribus.currentPage()
-            print('CP: 0')
             scribus.newPage(-1)
-            print('CP: 1')
             newPage =  currentPage+1
-            print "current page = " + str(currentPage)
-            print "New Page" + str(newPage)
-            print('CP: 2')
-            print "Copying object"  + newObjectName
             scribus.copyObject(newObjectName)
             scribus.deleteObject(newObjectName)
             scribus.gotoPage(newPage)
             scribus.pasteObject(newObjectName)
-        #scribus.setNewName("PLAYER_1","__player__")
-        #scribus.setNewName("__player__",str(x))
+            scribus.moveObjectAbs(iO,iT,newObjectName)
+        scribus.setNewName(destinationName,sourceName)
+        scribus.setNewName(sourceName,newObjectName)
 
+def main(argv):
+    """This is a documentation string. Write a description of what your code
+    does here. You should generally put documentation strings ("docstrings")
+    on all your Python functions."""
+    #########################
+    #  YOUR CODE GOES HERE  #
+    #########################
+    #copyPlayer("__player__","PLAYER 1")
+    #copyPlayer("__player__","PLAYER 2")
+    #copyPlayer("__player__","PLAYER 3")
+    csv = scribus.fileDialog('Open input', 'CSV files (*.csv)')
+    stuff = {'NAME': 'Mike Hingley', 'ADDRESS': '22 Trinity Street, Cradley Heath, West Midlands' , 'PHOTO' : '128.jpg'}
+    print(os.path.dirname(os.path.realpath(sys.argv[0])))
+    print os.getcwd()
+    print(sys.path[0])
+    print(os.path.abspath(''))
+    sourceName = "__player__"
+    if scribus.objectExists(sourceName):
+        scribus.selectObject(sourceName)
+        scribus.unGroupObject()
+        childObjectCount = scribus.selectionCount()
+        for x in range(0, childObjectCount):
+            element = scribus.getSelectedObject(x)
+            if scribus.getObjectType(str(element))  == 'TextFrame':
+                current = scribus.getAllText(element)
+                if current in stuff:
+                     fontsize = scribus.getFontSize(element)
+                     font = scribus.getFont(element)
+                     scribus.setText(stuff[current],element)
+                     scribus.setFont(font)
+                     scribus.setFontSize(fontsize)
+            if scribus.getObjectType(str(element))  == 'ImageFrame':
+                current = scribus.getImageFile(element)
+                currentName = os.path.basename(os.path.normpath(current))
+                print current
+                print currentName
+                if currentName in stuff:
+                     ExistingFolder = os.path.split(current)
+                     print ExistingFolder[0]
+                     newFile = os.path.join(ExistingFolder[0],stuff[currentName])
+                     print newFile
+                     scribus.loadImage(newFile,element)
+            print scribus.getObjectType(str(element))
+            print str(scribus.getSelectedObject(x))
+        scribus.groupObjects()
+        print "name = " + scribus.getSelectedObject()
+        scribus.setNewName("__player__",scribus.getSelectedObject())
 
 def main_wrapper(argv):
     """The main_wrapper() function disables redrawing, sets a sensible generic
